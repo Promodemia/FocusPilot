@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FocusPilot</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 800px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 5px;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #e0e0e0;
+      background: #f5f5f5;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 15px;
+      text-align: center;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+      transition: all 0.3s ease;
+      border-bottom: 3px solid transparent;
+    }
+
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+      background: white;
+    }
+
+    .tab:hover {
+      background: white;
+    }
+
+    .content {
+      padding: 30px;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 120px;
+      font-family: 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .button:active {
+      transform: translateY(0);
+    }
+
+    .button.secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .button.secondary:hover {
+      background: #d0d0d0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+    }
+
+    .stat-card h3 {
+      font-size: 12px;
+      opacity: 0.9;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .stat-card .value {
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .activity-card {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border-left: 4px solid #667eea;
+    }
+
+    .activity-card h3 {
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .activity-card .label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .activity-card .value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #667eea;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-badge.working {
+      background: #c8e6c9;
+      color: #2e7d32;
+    }
+
+    .status-badge.distracted {
+      background: #ffccbc;
+      color: #d84315;
+    }
+
+    .status-badge.break {
+      background: #b3e5fc;
+      color: #01579b;
+    }
+
+    .message {
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    .message.success {
+      background: #c8e6c9;
+      color: #2e7d32;
+      border-left: 4px solid #2e7d32;
+    }
+
+    .message.error {
+      background: #ffcdd2;
+      color: #c62828;
+      border-left: 4px solid #c62828;
+    }
+
+    .message.info {
+      background: #b3e5fc;
+      color: #01579b;
+      border-left: 4px solid #01579b;
+    }
+
+    .control-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .control-group button {
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      background: currentColor;
+      border-radius: 50%;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .category-selector {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .category-btn {
+      padding: 12px;
+      border: 2px solid #ddd;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      font-size: 13px;
+    }
+
+    .category-btn:hover {
+      border-color: #667eea;
+      color: #667eea;
+    }
+
+    .category-btn.selected {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+
+    @media (max-width: 600px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .header h1 {
+        font-size: 22px;
+      }
+
+      .tab {
+        font-size: 12px;
+        padding: 12px;
+      }
+
+      .content {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>FocusPilot</h1>
+      <p>Stay focused, track your progress</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="plan">Daily Plan</button>
+      <button class="tab" data-tab="status">Current Status</button>
+      <button class="tab" data-tab="stats">Statistics</button>
+    </div>
+
+    <div class="content">
+      <!-- Daily Plan Tab -->
+      <div id="plan" class="tab-content active">
+        <h2 style="margin-bottom: 20px; color: #333;">Create Your Daily Plan</h2>
+        <div class="message info">
+          <strong>Tip:</strong> Write a detailed plan of what you want to accomplish today. FocusPilot will help you stay on track.
+        </div>
+        <div class="form-group">
+          <label for="plan-input">Today's Plan</label>
+          <textarea id="plan-input" placeholder="Example: 9:00-10:00 - Design API, 10:00-12:00 - Implement backend, 14:00-15:30 - Review code..."></textarea>
+        </div>
+        <button class="button" onclick="submitPlan()">Save Plan</button>
+        <button class="button secondary" onclick="clearPlan()">Clear</button>
+        <div id="plan-message"></div>
+      </div>
+
+      <!-- Current Status Tab -->
+      <div id="status" class="tab-content">
+        <h2 style="margin-bottom: 20px; color: #333;">Current Activity</h2>
+        
+        <div id="activity-display"></div>
+
+        <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">Manual Category Update</h3>
+        <div class="form-group">
+          <label for="app-input">Application/Context</label>
+          <input id="app-input" type="text" placeholder="e.g., Visual Studio Code, Slack...">
+        </div>
+        
+        <div class="form-group">
+          <label>Category</label>
+          <div class="category-selector">
+            <button class="category-btn" onclick="selectCategory('work')">Work</button>
+            <button class="category-btn" onclick="selectCategory('communication')">Communication</button>
+            <button class="category-btn" onclick="selectCategory('break')">Break</button>
+            <button class="category-btn" onclick="selectCategory('distraction')">Distraction</button>
+          </div>
+        </div>
+
+        <input id="selected-category" type="hidden" value="">
+
+        <div class="control-group">
+          <button class="button" onclick="updateCategory()">Update Category</button>
+          <button class="button secondary" onclick="refreshStatus()">Refresh</button>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <button class="button" onclick="pauseMonitoring()" id="pause-btn">Pause Monitoring</button>
+        </div>
+        <div id="status-message"></div>
+      </div>
+
+      <!-- Statistics Tab -->
+      <div id="stats" class="tab-content">
+        <h2 style="margin-bottom: 20px; color: #333;">Today's Statistics</h2>
+        
+        <div id="stats-display" class="stats-grid">
+          <div class="stat-card">
+            <h3>Work Time</h3>
+            <div class="value">-- min</div>
+          </div>
+          <div class="stat-card">
+            <h3>Communication</h3>
+            <div class="value">-- min</div>
+          </div>
+          <div class="stat-card">
+            <h3>Breaks</h3>
+            <div class="value">-- min</div>
+          </div>
+          <div class="stat-card">
+            <h3>Distraction</h3>
+            <div class="value">-- min</div>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <button class="button" onclick="loadStats()">Refresh Stats</button>
+          <button class="button" onclick="trainModels()">Train Models</button>
+          <button class="button" onclick="testNotification()">Test Notification</button>
+          <button class="button" onclick="testDistractionAlert()">Test Distraction Alert</button>
+        </div>
+        <div id="stats-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Backend API URL
+    const API_URL = "http://localhost:8765";
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    let selectedCategory = '';
+
+    function selectCategory(category) {
+      selectedCategory = category;
+      document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('selected'));
+      event.target.classList.add('selected');
+      document.getElementById('selected-category').value = category;
+    }
+
+    async function submitPlan() {
+      const text = document.getElementById('plan-input').value;
+      if (!text.trim()) {
+        showMessage('plan-message', 'Please enter your daily plan', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/plan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        if (response.ok) {
+          showMessage('plan-message', 'Plan saved successfully!', 'success');
+          setTimeout(() => {
+            document.getElementById('plan-message').innerHTML = '';
+          }, 3000);
+        } else {
+          showMessage('plan-message', 'Error: Failed to save plan', 'error');
+        }
+      } catch (error) {
+        showMessage('plan-message', `Error: ${error}`, 'error');
+      }
+    }
+
+    function clearPlan() {
+      document.getElementById('plan-input').value = '';
+    }
+
+    async function refreshStatus() {
+      try {
+        const response = await fetch(`${API_URL}/current_state`);
+        const data = await response.json();
+        const activity = data.activity;
+        
+        const html = `
+          <div class="activity-card">
+            <h3>Current Activity</h3>
+            <div class="label">Application</div>
+            <div class="value">${activity.app_name}</div>
+            
+            <div class="label" style="margin-top: 10px;">Category</div>
+            <div class="value">
+              <span class="status-badge ${activity.category}">${activity.category.toUpperCase()}</span>
+              <span style="margin-left: 10px; color: #999;">Confidence: ${(activity.confidence * 100).toFixed(0)}%</span>
+            </div>
+          </div>
+        `;
+        document.getElementById('activity-display').innerHTML = html;
+        showMessage('status-message', 'Activity refreshed', 'success');
+        setTimeout(() => document.getElementById('status-message').innerHTML = '', 2000);
+      } catch (error) {
+        showMessage('status-message', `Error: ${error}`, 'error');
+      }
+    }
+
+    async function updateCategory() {
+      const app = document.getElementById('app-input').value;
+      if (!app.trim() || !selectedCategory) {
+        showMessage('status-message', 'Please fill in all fields', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/feedback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'category_update', category: selectedCategory })
+        });
+        if (response.ok) {
+          showMessage('status-message', 'Category updated', 'success');
+          setTimeout(() => document.getElementById('status-message').innerHTML = '', 2000);
+        } else {
+          showMessage('status-message', 'Error: Failed to update category', 'error');
+        }
+      } catch (error) {
+        showMessage('status-message', `Error: ${error}`, 'error');
+      }
+    }
+
+    async function pauseMonitoring() {
+      try {
+        const btn = document.getElementById('pause-btn');
+        const isPaused = btn.textContent.includes('Resume');
+        const response = await fetch(`${API_URL}/pause?pause=${!isPaused}`, {
+          method: 'POST'
+        });
+        if (response.ok) {
+          btn.textContent = isPaused ? 'Pause Monitoring' : 'Resume Monitoring';
+          showMessage('status-message', isPaused ? 'Monitoring resumed' : 'Monitoring paused', 'info');
+        }
+      } catch (error) {
+        showMessage('status-message', `Error: ${error}`, 'error');
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const response = await fetch(`${API_URL}/stats`);
+        const data = await response.json();
+        const stats = data.stats;
+        
+        const html = `
+          <div class="stat-card">
+            <h3>Work Time</h3>
+            <div class="value">${Math.round(stats.work_time / 60)} min</div>
+          </div>
+          <div class="stat-card">
+            <h3>Communication</h3>
+            <div class="value">${Math.round(stats.communication_time / 60)} min</div>
+          </div>
+          <div class="stat-card">
+            <h3>Breaks</h3>
+            <div class="value">${Math.round(stats.break_time / 60)} min</div>
+          </div>
+          <div class="stat-card">
+            <h3>Distraction</h3>
+            <div class="value">${Math.round(stats.distraction_time / 60)} min</div>
+          </div>
+        `;
+        document.getElementById('stats-display').innerHTML = html;
+        showMessage('stats-message', 'Statistics updated', 'success');
+        setTimeout(() => document.getElementById('stats-message').innerHTML = '', 2000);
+      } catch (error) {
+        showMessage('stats-message', `Error: ${error}`, 'error');
+      }
+    }
+
+    async function trainModels() {
+      try {
+        showMessage('stats-message', 'Training models...', 'info');
+        const response = await fetch(`${API_URL}/train`, { method: 'POST' });
+        if (response.ok) {
+          showMessage('stats-message', 'Models training started', 'success');
+        } else {
+          showMessage('stats-message', 'Error: Training failed', 'error');
+        }
+      } catch (error) {
+        showMessage('stats-message', `Error: ${error}`, 'error');
+      }
+    }
+
+    async function testNotification() {
+      try {
+        const response = await fetch(`${API_URL}/test_notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: "FocusPilot: Test Notification",
+            message: "This is a Windows test notification! System works."
+          })
+        });
+        if (response.ok) {
+          showMessage('stats-message', 'Notification sent! Check system tray.', 'success');
+        } else {
+          showMessage('stats-message', 'Error: Failed to send notification', 'error');
+        }
+      } catch (error) {
+        showMessage('stats-message', `Error: ${error}`, 'error');
+      }
+    }
+
+    async function testDistractionAlert() {
+      try {
+        const response = await fetch(`${API_URL}/test_distraction`, { method: 'POST' });
+        if (response.ok) {
+          showMessage('stats-message', 'Distraction alert test sent!', 'success');
+        } else {
+          showMessage('stats-message', 'Error: Failed to send distraction alert', 'error');
+        }
+      } catch (error) {
+        showMessage('stats-message', `Error: ${error}`, 'error');
+      }
+    }
+
+    function showMessage(elementId, message, type) {
+      const element = document.getElementById(elementId);
+      element.innerHTML = `<div class="message ${type}">${message}</div>`;
+    }
+
+    // Load initial status
+    window.addEventListener('load', refreshStatus);
+    
+    // Auto-refresh every 5 seconds
+    setInterval(refreshStatus, 5000);
+  </script>
+</body>
+</html>
