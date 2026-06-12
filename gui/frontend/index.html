@@ -323,6 +323,76 @@
       border-color: #667eea;
     }
 
+    .activities-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background: white;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .activities-table th {
+      background: #f5f5f5;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      color: #333;
+      border-bottom: 2px solid #ddd;
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    .activities-table td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .activities-table tr:hover {
+      background: #f9f9f9;
+    }
+
+    .activities-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .category-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .category-badge.work {
+      background: #c8e6c9;
+      color: #2e7d32;
+    }
+
+    .category-badge.communication {
+      background: #bbdefb;
+      color: #1565c0;
+    }
+
+    .category-badge.break {
+      background: #ffe0b2;
+      color: #e65100;
+    }
+
+    .category-badge.distraction {
+      background: #ffccbc;
+      color: #d84315;
+    }
+
+    .category-badge.unknown {
+      background: #e0e0e0;
+      color: #666;
+    }
+
     @media (max-width: 600px) {
       .stats-grid {
         grid-template-columns: 1fr;
@@ -377,6 +447,11 @@
         <h2 style="margin-bottom: 20px; color: #333;">Current Activity</h2>
         
         <div id="activity-display"></div>
+
+        <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">Recent Activities</h3>
+        <div id="activities-list" style="margin-bottom: 20px;">
+          <p style="color: #999; text-align: center; padding: 20px;">Loading activities...</p>
+        </div>
 
         <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">Manual Category Update</h3>
         <div class="form-group">
@@ -566,43 +641,68 @@
         const data = await response.json();
         const stats = data.stats;
         
+        const workMin = stats.work_time > 0 ? Math.round(stats.work_time / 60) : 0;
+        const commMin = stats.communication_time > 0 ? Math.round(stats.communication_time / 60) : 0;
+        const breakMin = stats.break_time > 0 ? Math.round(stats.break_time / 60) : 0;
+        const distMin = stats.distraction_time > 0 ? Math.round(stats.distraction_time / 60) : 0;
+        
         const html = `
           <div class="stat-card">
             <h3>Work Time</h3>
-            <div class="value">${Math.round(stats.work_time / 60)} min</div>
+            <div class="value">${workMin} min</div>
           </div>
           <div class="stat-card">
             <h3>Communication</h3>
-            <div class="value">${Math.round(stats.communication_time / 60)} min</div>
+            <div class="value">${commMin} min</div>
           </div>
           <div class="stat-card">
             <h3>Breaks</h3>
-            <div class="value">${Math.round(stats.break_time / 60)} min</div>
+            <div class="value">${breakMin} min</div>
           </div>
           <div class="stat-card">
             <h3>Distraction</h3>
-            <div class="value">${Math.round(stats.distraction_time / 60)} min</div>
+            <div class="value">${distMin} min</div>
           </div>
         `;
         document.getElementById('stats-display').innerHTML = html;
-        showMessage('stats-message', 'Statistics updated', 'success');
-        setTimeout(() => document.getElementById('stats-message').innerHTML = '', 2000);
+        showMessage('stats-message', 'Statistics updated successfully', 'success');
+        setTimeout(() => document.getElementById('stats-message').innerHTML = '', 3000);
       } catch (error) {
-        showMessage('stats-message', `Error: ${error}`, 'error');
+        showMessage('stats-message', `Error loading statistics: ${error}`, 'error');
       }
     }
 
     async function trainModels() {
       try {
-        showMessage('stats-message', 'Training models...', 'info');
+        const btn = event.target;
+        btn.disabled = true;
+        btn.textContent = 'Training...';
+        
+        showMessage('stats-message', 'Starting model training. This may take a moment...', 'info');
+        
         const response = await fetch(`${API_URL}/train`, { method: 'POST' });
-        if (response.ok) {
-          showMessage('stats-message', 'Models training started', 'success');
+        const data = await response.json();
+        
+        if (data.status === 'ok' || data.status === 'warning') {
+          const message = data.status === 'ok' 
+            ? `Models trained successfully using ${data.data_points || 'available'} data points`
+            : 'Training completed with warning: ' + data.message;
+          
+          showMessage('stats-message', message, data.status === 'ok' ? 'success' : 'info');
+          setTimeout(() => {
+            btn.disabled = false;
+            btn.textContent = 'Train Models';
+            document.getElementById('stats-message').innerHTML = '';
+          }, 3000);
         } else {
-          showMessage('stats-message', 'Error: Training failed', 'error');
+          showMessage('stats-message', 'Error: ' + (data.message || 'Training failed'), 'error');
+          btn.disabled = false;
+          btn.textContent = 'Train Models';
         }
       } catch (error) {
-        showMessage('stats-message', `Error: ${error}`, 'error');
+        showMessage('stats-message', `Error: Training request failed - ${error}`, 'error');
+        event.target.disabled = false;
+        event.target.textContent = 'Train Models';
       }
     }
 
@@ -639,16 +739,71 @@
       }
     }
 
+    async function loadActivities() {
+      try {
+        const response = await fetch(`${API_URL}/activities`);
+        const data = await response.json();
+        const activities = data.activities || [];
+        
+        if (activities.length === 0) {
+          document.getElementById('activities-list').innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No activities recorded yet. Activities will appear as you work.</p>';
+          return;
+        }
+        
+        let tableHtml = `
+          <table class="activities-table">
+            <thead>
+              <tr>
+                <th>Application</th>
+                <th>Category</th>
+                <th>Last Seen</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+        
+        for (const activity of activities) {
+          const lastSeen = new Date(activity.last_seen);
+          const timeStr = lastSeen.toLocaleTimeString();
+          const categoryBadge = `<span class="category-badge ${activity.category}">${activity.category}</span>`;
+          
+          tableHtml += `
+            <tr>
+              <td>${activity.app_name}</td>
+              <td>${categoryBadge}</td>
+              <td>${timeStr}</td>
+            </tr>
+          `;
+        }
+        
+        tableHtml += `
+            </tbody>
+          </table>
+        `;
+        
+        document.getElementById('activities-list').innerHTML = tableHtml;
+      } catch (error) {
+        document.getElementById('activities-list').innerHTML = '<p style="color: #d84315; text-align: center; padding: 20px;">Error loading activities</p>';
+      }
+    }
+
     function showMessage(elementId, message, type) {
       const element = document.getElementById(elementId);
       element.innerHTML = `<div class="message ${type}">${message}</div>`;
     }
 
     // Load initial status
-    window.addEventListener('load', refreshStatus);
+    window.addEventListener('load', () => {
+      refreshStatus();
+      loadActivities();
+      loadStats();
+    });
     
     // Auto-refresh every 5 seconds
-    setInterval(refreshStatus, 5000);
+    setInterval(() => {
+      refreshStatus();
+      loadActivities();
+    }, 5000);
   </script>
 </body>
 </html>

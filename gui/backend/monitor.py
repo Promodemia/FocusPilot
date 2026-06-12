@@ -64,6 +64,8 @@ class ActivityWatchMonitor:
         self.current_category = "unknown"
         self.distraction_start = None
         self.category_history = []
+        self.activity_history = []
+        self.distraction_duration = 0
         self.daily_stats = {
             "work": 0,
             "communication": 0,
@@ -90,6 +92,35 @@ class ActivityWatchMonitor:
             return True
         except:
             return False
+
+    def _calculate_confidence(self, category: str) -> float:
+        """Calculate confidence based on distraction duration and patterns"""
+        base_confidence = 0.70
+        
+        # Adjust based on category
+        if category == "work":
+            base_confidence = 0.85
+        elif category == "distraction":
+            # Increase confidence if distraction is prolonged
+            if self.distraction_duration > 5:  # 5 minutes
+                base_confidence = 0.95
+            elif self.distraction_duration > 2:  # 2 minutes
+                base_confidence = 0.90
+            else:
+                base_confidence = 0.75
+        elif category == "communication":
+            base_confidence = 0.80
+        elif category == "break":
+            base_confidence = 0.75
+        
+        # Adjust based on history patterns
+        if len(self.category_history) >= 5:
+            recent = self.category_history[-5:]
+            same_count = sum(1 for cat in recent if cat == category)
+            consistency_boost = (same_count / 5) * 0.15
+            base_confidence = min(0.99, base_confidence + consistency_boost)
+        
+        return round(base_confidence, 2)
 
     def get_current_activity(self) -> Dict[str, Any]:
         """Get current activity from AW or Windows API fallback"""
@@ -121,7 +152,21 @@ class ActivityWatchMonitor:
             window_title = aw_result["window_title"]
         
         # Classify activity using ML model
-        category, confidence = self.ml_model.classify(app_name, {})
+        category, _ = self.ml_model.classify(app_name, {})
+        
+        # Calculate dynamic confidence based on patterns
+        confidence = self._calculate_confidence(category)
+        
+        # Track activity
+        activity_entry = {
+            "app_name": app_name,
+            "window_title": window_title,
+            "category": category,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        self.activity_history.append(activity_entry)
+        if len(self.activity_history) > 50:
+            self.activity_history.pop(0)
         
         return {
             "app_name": app_name,
@@ -160,18 +205,21 @@ class ActivityWatchMonitor:
                 if category == "distraction":
                     if self.distraction_start is None:
                         self.distraction_start = datetime.utcnow()
+                        self.distraction_duration = 0
                     else:
-                        duration = (datetime.utcnow() - self.distraction_start).total_seconds() / 60
-                        if duration >= 2:  # 2 minutes
+                        self.distraction_duration = (datetime.utcnow() - self.distraction_start).total_seconds() / 60
+                        if self.distraction_duration >= 2:  # 2 minutes
                             await notify_callback({
                                 "title": "FocusPilot: Distraction Alert",
-                                "message": f"Distracted for {duration:.0f} minutes",
+                                "message": f"Distracted for {self.distraction_duration:.0f} minutes",
                                 "category": category,
                                 "app": activity.get("app_name", "unknown")
                             })
                             self.distraction_start = datetime.utcnow()
+                            self.distraction_duration = 0
                 else:
                     self.distraction_start = None
+                    self.distraction_duration = 0
                 
                 # Check ML prediction
                 distraction_prob = self.ml_model.predict_distraction(self.category_history)
@@ -204,3 +252,17 @@ class ActivityWatchMonitor:
     def get_stats(self) -> Dict[str, int]:
         """Get current session stats"""
         return self.daily_stats.copy()
+
+    def get_activities(self) -> list:
+        """Get recent activity history with categories"""
+        unique_activities = {}
+        for activity in reversed(self.activity_history):
+            app = activity["app_name"]
+            if app not in unique_activities:
+                unique_activities[app] = {
+                    "app_name": app,
+                    "category": activity["category"],
+                    "last_seen": activity["timestamp"]
+                }
+        
+        return list(unique_activities.values())[:20]  # Return last 20 unique activities
