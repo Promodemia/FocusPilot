@@ -75,7 +75,7 @@ class ActivityWatchMonitor:
         if HAS_AW:
             try:
                 self.aw_client = ActivityWatchClient("focuspilot")
-                self.aw_client.server_version()
+                self.aw_client.get_info()
                 logger.info("Connected to ActivityWatch")
             except Exception as e:
                 logger.error(f"Failed to connect to AW: {e}")
@@ -86,7 +86,7 @@ class ActivityWatchMonitor:
         if not HAS_AW or not self.aw_client:
             return False
         try:
-            self.aw_client.server_version()
+            self.aw_client.get_info()
             return True
         except:
             return False

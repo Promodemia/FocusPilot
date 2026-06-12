@@ -19,19 +19,20 @@ try:
 except ImportError:
     # Mock class для отсутствия aw-client
     class ActivityWatchClient:
-        def __init__(self, name: str = "focuspilot", host: str = "localhost", port: int = 5600, timeout: int = 5):
-            self.name = name
-            self.host = host
-            self.port = port
-            self.timeout = timeout
+        def __init__(self, client_name: str = "focuspilot", testing: bool = False, host: str = None, port: int = None, protocol: str = 'http'):
+            self.client_name = client_name
+            self.testing = testing
+            self.host = host or "localhost"
+            self.port = port or 5600
+            self.protocol = protocol
         
-        def server_version(self):
+        def get_info(self):
             """Проверка версии сервера через HTTP"""
             try:
                 url = f"http://{self.host}:{self.port}/api/0/info"
-                with urllib.request.urlopen(url, timeout=self.timeout) as response:
+                with urllib.request.urlopen(url, timeout=5) as response:
                     data = json.loads(response.read().decode())
-                    return data.get("version", "unknown")
+                    return data
             except Exception as e:
                 raise ConnectionError(f"Cannot connect to ActivityWatch at {self.host}:{self.port}: {e}")
         
@@ -39,7 +40,7 @@ except ImportError:
             """Получить список бакетов (mock)"""
             return []
         
-        def query(self, query_str: str, start: datetime, end: datetime):
+        def query(self, query_str: str, start: datetime = None, end: datetime = None):
             """Query events (mock)"""
             return []
     
@@ -69,13 +70,12 @@ class AWDataProvider:
         """Подключение к ActivityWatch"""
         try:
             self.client = ActivityWatchClient(
-                name="focuspilot",
+                client_name="focuspilot",
                 host=self.host,
-                port=self.port,
-                timeout=self.timeout
+                port=self.port
             )
             # Проверка подключения
-            self.client.server_version()
+            self.client.get_info()
             logger.info(f"Connected to ActivityWatch at {self.host}:{self.port}")
             return True
         except Exception as e:
@@ -87,7 +87,7 @@ class AWDataProvider:
         try:
             if self.client is None:
                 return False
-            self.client.server_version()
+            self.client.get_info()
             return True
         except Exception:
             return False

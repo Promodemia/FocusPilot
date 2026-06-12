@@ -6,23 +6,6 @@ Feature Extractor
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional, Tuple
-try:
-    import pandas as pd
-except Exception:
-    pd = None
-
-try:
-    import numpy as np
-except Exception:
-    np = None
-"""
-Feature Extractor
-Построение векторов признаков из событий ActivityWatch
-"""
-
-import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
 import pandas as pd
 import numpy as np
 from collections import Counter
